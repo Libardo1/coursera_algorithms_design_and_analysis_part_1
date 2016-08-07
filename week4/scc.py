@@ -59,15 +59,19 @@ def dfs(graph, start, visited=None, fin_t=1):
             else:
                 stack.extend(unvisited_children)
 
+
+    # print('$$$, ', [_[0] for _ in sorted(fin_ts.items(), key=lambda x: x[1], reverse=True)])
+
     # backtracking and add finishing_times to other vertexes
     for (vertex, val) in sorted(fin_ts.items(), key=lambda x: x[1]):
         if val < 0:
             fin_ts[vertex] = fin_t
             fin_t += 1
+    
     return visited, fin_ts, fin_t
 
 
-def dfs_second_pass(graph, start, sccs, visited=None):
+def dfs_second_pass(graph, leader, sccs, visited=None):
     """
     :param fin_t: the time when a vertex is fully explored
     """
@@ -75,7 +79,7 @@ def dfs_second_pass(graph, start, sccs, visited=None):
         visited = set()
 
     scc = set()
-    stack = [start]
+    stack = [leader]
     while stack:
         vertex = stack.pop()
         scc.add(vertex)
@@ -83,12 +87,15 @@ def dfs_second_pass(graph, start, sccs, visited=None):
             visited.add(vertex)
             if vertex in graph: # depth first
                 unvisited_children = graph[vertex] - visited
-                if len(unvisited_children) == 0 and len(stack) == 0:
-                    # meaning it has been fully explored
-                    sccs.append(scc)
-                    scc = set()
-                else:
-                    stack.extend(unvisited_children)
+            else:
+                univisited_children = set()
+
+            if len(unvisited_children) == 0 and len(stack) == 0:
+                # meaning it has been fully explored
+                sccs.append(scc)
+                scc = set()
+            else:
+                stack.extend(unvisited_children)
 
     return visited
 
@@ -178,6 +185,6 @@ if DEBUG:
     assertEqual(main('small_SCC4.txt'),  '3,3,2,0,0')
     assertEqual(main('small_SCC5.txt'),  '3,3,1,1,0')
     assertEqual(main('small_SCC6.txt'),  '7,1,0,0,0')
-    print(main('small_SCC6.txt'))
+    assertEqual(main('small_SCC7.txt'),  '6,3,2,1,0')
 else:
     print(main('SCC.txt'))
