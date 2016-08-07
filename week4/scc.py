@@ -39,34 +39,20 @@ def dfs(graph, start, visited=None, fin_t=1):
 
     fin_ts = {}
 
-    visiting_order = -1     # use negative numbers to avoid conflict with fin_t
     stack = [start]
     while stack:
         vertex = stack.pop()
         if vertex not in visited:
             visited.add(vertex)
-            fin_ts[vertex] = visiting_order
-            visiting_order -= 1
-            if vertex in graph: # depth first
-                unvisited_children = graph[vertex] - visited
-            else:
-                unvisited_children = set()
+            # http://stackoverflow.com/questions/24051386/kosaraju-finding-finishing-time-using-iterative-dfs
+            stack.append(vertex)   # added it back
 
-            if len(unvisited_children) == 0:
-                # meaning it has been fully explored
+            if vertex in graph: # depth first
+                stack.extend(graph[vertex] - visited)
+        else:
+            if vertex not in fin_ts:
                 fin_ts[vertex] = fin_t
                 fin_t += 1
-            else:
-                stack.extend(unvisited_children)
-
-
-    # print('$$$, ', [_[0] for _ in sorted(fin_ts.items(), key=lambda x: x[1], reverse=True)])
-
-    # backtracking and add finishing_times to other vertexes
-    for (vertex, val) in sorted(fin_ts.items(), key=lambda x: x[1]):
-        if val < 0:
-            fin_ts[vertex] = fin_t
-            fin_t += 1
     
     return visited, fin_ts, fin_t
 
