@@ -49,12 +49,15 @@ def dfs(graph, start, visited=None, fin_t=1):
             visiting_order -= 1
             if vertex in graph: # depth first
                 unvisited_children = graph[vertex] - visited
-                if len(unvisited_children) == 0:
-                    # meaning it has been fully explored
-                    fin_ts[vertex] = fin_t
-                    fin_t += 1
-                else:
-                    stack.extend(unvisited_children)
+            else:
+                unvisited_children = set()
+
+            if len(unvisited_children) == 0:
+                # meaning it has been fully explored
+                fin_ts[vertex] = fin_t
+                fin_t += 1
+            else:
+                stack.extend(unvisited_children)
 
     # backtracking and add finishing_times to other vertexes
     for (vertex, val) in sorted(fin_ts.items(), key=lambda x: x[1]):
@@ -80,7 +83,7 @@ def dfs_second_pass(graph, start, sccs, visited=None):
             visited.add(vertex)
             if vertex in graph: # depth first
                 unvisited_children = graph[vertex] - visited
-                if len(unvisited_children) == 0:
+                if len(unvisited_children) == 0 and len(stack) == 0:
                     # meaning it has been fully explored
                     sccs.append(scc)
                     scc = set()
@@ -108,7 +111,7 @@ def main(data_file):
                 # visited, fin_ts, fin_t = dfs(graph, i, visited)
                 visited, subfin_ts, fin_t = dfs(graph, i, visited, fin_t=fin_t)
                 fin_ts.update(subfin_ts)
-    
+
         if i % 100000 == 0:
             print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
     print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
@@ -175,5 +178,6 @@ if DEBUG:
     assertEqual(main('small_SCC4.txt'),  '3,3,2,0,0')
     assertEqual(main('small_SCC5.txt'),  '3,3,1,1,0')
     assertEqual(main('small_SCC6.txt'),  '7,1,0,0,0')
+    print(main('small_SCC6.txt'))
 else:
     print(main('SCC.txt'))
