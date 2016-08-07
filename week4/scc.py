@@ -86,6 +86,7 @@ def dfs_second_pass(graph, start, sccs, visited=None):
                     scc = set()
                 else:
                     stack.extend(unvisited_children)
+
     return visited
 
 def main(data_file):
@@ -101,19 +102,22 @@ def main(data_file):
     visited = set()
     fin_ts = {}
     fin_t = 1
-    for i in range(n_edges, 0, -1):
-        if i in graph and i not in visited:
-            # visited, fin_ts, fin_t = dfs(graph, i, visited)
-            visited, subfin_ts, fin_t = dfs(graph, i, visited, fin_t=fin_t)
-            fin_ts.update(subfin_ts)
-
+    for i in range(n_vertexes, 0, -1):
+        if i in graph:
+            if i not in visited:
+                # visited, fin_ts, fin_t = dfs(graph, i, visited)
+                visited, subfin_ts, fin_t = dfs(graph, i, visited, fin_t=fin_t)
+                fin_ts.update(subfin_ts)
+    
         if i % 100000 == 0:
             print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
     print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
 
+    sorted_visited_items = sorted(fin_ts.items(), key=lambda x: x[1], reverse=True)
+    
     if DEBUG:
         print('visited: ', visited)
-        for item in sorted(fin_ts.items(), key=lambda x: x[1]):
+        for item in sorted_visited_items:
             print(item)
 
     # sys.exit(1)
@@ -132,28 +136,44 @@ def main(data_file):
     leaders = []
     sccs = []
     visited = set()
-    for (i, _) in sorted(fin_ts.items(), key=lambda x: x[1], reverse=True):
-        if i in graph and i not in visited:
+    for (i, _) in sorted_visited_items:
+        if i in graph:
+            if i not in visited:
+                leaders.append(i)
+                scc = set()
+                visited = dfs_second_pass(graph, i, sccs, visited)
+        else:
             leaders.append(i)
-            scc = set()
-            visited = dfs_second_pass(graph, i, sccs, visited)
-
+            visited.add(i)
+            sccs.append(set([i]))
+    
     if DEBUG:
         print('visited: ', visited)
         print('leaders: ', leaders)
         print('SCCs: ', sccs)
         # assert sccs == [{1, 4, 7}, {9, 3, 6}, {8, 2, 5}]
 
-    print(','.join(map(str, sorted(map(lambda x: len(x), sccs), reverse=True)[:5])))
+    res = sorted(map(lambda x: len(x), sccs), reverse=True)[:5]
+    if len(res) < 5:
+        res.extend([0] * (5 - len(res)))
+    return(','.join(map(str, res)))
 
 
 DEBUG = eval(sys.argv[1])
 
+def assertEqual(a, b):
+    try:
+        assert a == b
+    except AssertionError as err:
+        print(('{0} != {1}'.format(a, b)))
+
+
 if DEBUG:
-    main('small_SCC.txt')
-    main('small_SCC2.txt')
-    main('small_SCC3.txt')
-    main('small_SCC4.txt')
-    main('small_SCC5.txt')
+    assertEqual(main('small_SCC.txt'),  '3,3,3,0,0')
+    assertEqual(main('small_SCC2.txt'),  '3,3,2,0,0')
+    assertEqual(main('small_SCC3.txt'),  '3,3,3,0,0')
+    assertEqual(main('small_SCC4.txt'),  '3,3,2,0,0')
+    assertEqual(main('small_SCC5.txt'),  '3,3,1,1,0')
+    assertEqual(main('small_SCC6.txt'),  '7,1,0,0,0')
 else:
-    data_file = 'SCC.txt'
+    print(main('SCC.txt'))
