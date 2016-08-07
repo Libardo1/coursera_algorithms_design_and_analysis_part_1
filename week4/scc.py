@@ -69,13 +69,18 @@ def dfs(graph, start, visited=None, fin_ts=None, fin_t=0):
 
     stack = [start]
     while stack:
+        print(stack)
         vertex = stack.pop()
         if vertex not in visited:
             visited.add(vertex)
-            if vertex in graph:
-                stack.extend(graph[vertex] - visited)
-        fin_t += 1
-        fin_ts[vertex] = fin_t
+            if vertex in graph: # depth first
+                unvisited_children = graph[vertex] - visited
+                if len(unvisited_children) == 0:
+                    # meaning it has been fully explored
+                    fin_t += 1
+                    fin_ts[vertex] = fin_t
+                else:
+                    stack.extend(unvisited_children)
     return visited, fin_ts, fin_t
 
 graph, n_vertexes, n_edges = read_graph(data_file, reverse=True)
@@ -96,17 +101,20 @@ for i in range(n_edges, 0, -1):
         entrypoints.append(i)
         visited, fin_ts, fin_t = dfs(graph, i, visited, fin_ts, fin_t)
 
-#         for _ in reversed(explored[explored.index(i):]):
-#             if _ not in fin_times:
-#                 fin_times[_] = fin_t
-#                 fin_t += 1
+        # for _ in reversed(explored[explored.index(i):]):
+        #     if _ not in fin_ts:
+        #         fin_ts[_] = fin_t
+        #         fin_t += 1
 
 #     if i % 100000 == 0:
 #         print('Processing Vertex {0}'.format(i))
 
 
 if DEBUG:
-    print('explored: ', visited)
+    print('visited: ', visited)
+    for item in sorted(fin_ts.items(), key=lambda x: x[1]):
+        print(item)
+    
 
 # if DEBUG:
 #     print('explored: ', explored)
