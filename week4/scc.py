@@ -26,46 +26,18 @@ def read_graph(data_file, reverse=False):
     return graph, len(vertexes), n_edges
 
 
-DEBUG = eval(sys.argv[1])
-
-if DEBUG:
-    # data_file = 'small_SCC.txt'
-    data_file = 'small_SCC2.txt'
-else:
-    # data_file = 'small_SCC.txt'
-    data_file = 'SCC.txt'
-
-# recursive dfs doesn't because it results in over 20000 recursions, use FIFO
-
-# explored = []
-# entrypoints = []
-# fin_times = {}
-# fin_t = 1
-
-# def dfs(graph, i):
-#     """
-#     :param i: node i
-#     """
-#     global fin_t
-#     explored.append(i)
-#     for j in graph[i]:
-#         if j not in explored and j in graph:
-#             dfs(graph, j)
-#         else:
-#             if not i in entrypoints:
-#                 fin_times[i] = fin_t
-#                 fin_t += 1
-
-
-def dfs(graph, start, visited=None, fin_ts=None, fin_t=1):
+def dfs(graph, start, visited=None, fin_t=1):
     """
+    # Don't use recursive dfs doesn't because it results in over 20000
+    # recursions, use FIFO instead
+
     :param fin_t: the time when a vertex is fully explored
+
     """
     if visited is None:
         visited = set()
 
-    if fin_ts is None:
-        fin_ts = {}
+    fin_ts = {}
 
     visiting_order = -1     # use negative numbers to avoid conflict with fin_t
     stack = [start]
@@ -91,35 +63,8 @@ def dfs(graph, start, visited=None, fin_ts=None, fin_t=1):
             fin_t += 1
     return visited, fin_ts, fin_t
 
-graph, n_vertexes, n_edges = read_graph(data_file, reverse=True)
-print('finished reading graph with '
-      '{0} vertexes and {1} edges'.format(n_vertexes, n_edges))
 
-print('===== first pass:')
-
-if DEBUG:
-    print(graph)
-
-visited = set()
-fin_ts = {}
-fin_t = 1
-for i in range(n_edges, 0, -1):
-    if i in graph and i not in visited:
-        visited, fin_ts, fin_t = dfs(graph, i, visited, fin_ts, fin_t)
-
-    if i % 100000 == 0:
-        print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
-print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
-
-if DEBUG:
-    print('visited: ', visited)
-    for item in sorted(fin_ts.items(), key=lambda x: x[1]):
-        print(item)
-
-
-###############################################################################
-
-def dfs_second_pass(graph, start, visited=None):
+def dfs_second_pass(graph, start, sccs, visited=None):
     """
     :param fin_t: the time when a vertex is fully explored
     """
@@ -141,49 +86,74 @@ def dfs_second_pass(graph, start, visited=None):
                     scc = set()
                 else:
                     stack.extend(unvisited_children)
-
     return visited
 
+def main(data_file):
+    graph, n_vertexes, n_edges = read_graph(data_file, reverse=True)
+    print('finished reading graph with '
+          '{0} vertexes and {1} edges'.format(n_vertexes, n_edges))
 
-graph, _, _ = read_graph(data_file)
+    print('===== first pass:')
 
-print('===== second pass:')
+    if DEBUG:
+        print(graph)
+
+    visited = set()
+    fin_ts = {}
+    fin_t = 1
+    for i in range(n_edges, 0, -1):
+        if i in graph and i not in visited:
+            # visited, fin_ts, fin_t = dfs(graph, i, visited)
+            visited, subfin_ts, fin_t = dfs(graph, i, visited, fin_t=fin_t)
+            fin_ts.update(subfin_ts)
+
+        if i % 100000 == 0:
+            print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
+    print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
+
+    if DEBUG:
+        print('visited: ', visited)
+        for item in sorted(fin_ts.items(), key=lambda x: x[1]):
+            print(item)
+
+    # sys.exit(1)
+
+
+    ###############################################################################
+
+
+    graph, _, _ = read_graph(data_file)
+
+    print('===== second pass:')
+
+    if DEBUG:
+        print(graph)
+
+    leaders = []
+    sccs = []
+    visited = set()
+    for (i, _) in sorted(fin_ts.items(), key=lambda x: x[1], reverse=True):
+        if i in graph and i not in visited:
+            leaders.append(i)
+            scc = set()
+            visited = dfs_second_pass(graph, i, sccs, visited)
+
+    if DEBUG:
+        print('visited: ', visited)
+        print('leaders: ', leaders)
+        print('SCCs: ', sccs)
+        # assert sccs == [{1, 4, 7}, {9, 3, 6}, {8, 2, 5}]
+
+    print(','.join(map(str, sorted(map(lambda x: len(x), sccs), reverse=True)[:5])))
+
+
+DEBUG = eval(sys.argv[1])
 
 if DEBUG:
-    print(graph)
-
-leaders = []
-sccs = []
-visited = set()
-for (i, _) in sorted(fin_ts.items(), key=lambda x: x[1], reverse=True):
-    if i in graph and i not in visited:
-        leaders.append(i)
-        scc = set()
-        visited = dfs_second_pass(graph, i, visited)
-
-if DEBUG:
-    print('visited: ', visited)
-    print('leaders: ', leaders)
-    print('SCCs: ', sccs)
-    # assert sccs == [{1, 4, 7}, {9, 3, 6}, {8, 2, 5}]
-
-print(sorted(map(lambda x: len(x), sccs), reverse=True)[:5])
-
-
-
-
-# def dfs(graph, i):
-#     """
-#     :param i: node i
-#     """
-#     global scc
-#     explored.append(i)
-#     scc.add(i)
-#     for j in graph[i]:
-#         if j in graph and j not in explored:
-#             dfs(graph, j)
-#         else:
-#             if i not in leaders:
-#                 print(i, scc)
-#                 sccs.append(scc)
-#                 scc = set()
+    main('small_SCC.txt')
+    main('small_SCC2.txt')
+    main('small_SCC3.txt')
+    main('small_SCC4.txt')
+    main('small_SCC5.txt')
+else:
+    data_file = 'SCC.txt'
