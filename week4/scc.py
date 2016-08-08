@@ -28,26 +28,21 @@ def read_graph(data_file, reverse=False):
     return graph, len(vertexes), n_edges
 
 
-def dfs(graph, start, visited=None, fin_t=1):
+def dfs_first_pass(graph, start, visited, fin_t):
     """
     # Don't use recursive dfs doesn't because it results in over 20000
-    # recursions, use FIFO instead
+    # recursions, use iterative method with a FIFO stack instead
 
-    :param fin_t: the time when a vertex is fully explored
-
+    :param fin_t: the starting finishing time when a vertex is fully explored
     """
-    if visited is None:
-        visited = set()
-
     fin_ts = {}
-
     stack = [start]
     while stack:
         vertex = stack.pop()
         if vertex not in visited:
             visited.add(vertex)
             # http://stackoverflow.com/questions/24051386/kosaraju-finding-finishing-time-using-iterative-dfs
-            stack.append(vertex)   # added it back
+            stack.append(vertex)   # added it back for backtracking
 
             if vertex in graph: # depth first
                 stack.extend(graph[vertex] - visited)
@@ -59,24 +54,19 @@ def dfs(graph, start, visited=None, fin_t=1):
     return visited, fin_ts, fin_t
 
 
-def dfs_second_pass(graph, leader, visited, fin_ts):
-    """
-    :param visited: all previously visited nodes
-    """
-
-    cutoff = fin_ts[leader]
+def dfs_second_pass(graph, start, visited, fin_ts):
+    cutoff = fin_ts[start]
     scc = set()
-    stack = [leader]
+    stack = [start]
     while stack:
         vertex = stack.pop()
 
-        if fin_ts[vertex] <= cutoff:
-            if vertex not in scc:
-                scc.add(vertex)
-                visited.add(vertex)
-                if vertex in graph: # depth first
-                    stack.extend(graph[vertex] - scc)
-    return scc, visited
+        if fin_ts[vertex] <= cutoff and vertex not in scc:
+            scc.add(vertex)
+            visited.add(vertex)
+            if vertex in graph:
+                stack.extend(graph[vertex] - scc)
+    return visited, scc
 
 
 def main(data_file):
@@ -89,20 +79,16 @@ def main(data_file):
     if DEBUG:
         print(graph)
 
-    visited = set()
-    fin_ts = {}
-    fin_t = 1
+    visited, fin_ts, fin_t = set(), {}, 1
     for i in range(n_vertexes, 0, -1):
-        if i in graph:
-            if i not in visited:
-                # visited, fin_ts, fin_t = dfs(graph, i, visited)
-                visited, subfin_ts, fin_t = dfs(graph, i, visited, fin_t=fin_t)
-                fin_ts.update(subfin_ts)
+        if i in graph and i not in visited:
+            visited, subfin_ts, fin_t = dfs_first_pass(graph, i, visited, fin_t)
+            fin_ts.update(subfin_ts)
 
         if i % 100000 == 0:
             print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
-    print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
 
+    print('sorting vertexes by finishing times...')
     sorted_visited_items = sorted(fin_ts.items(), key=lambda x: x[1], reverse=True)
     
     if DEBUG:
@@ -110,11 +96,7 @@ def main(data_file):
         for item in sorted_visited_items:
             print(item)
 
-    # sys.exit(1)
-
-
     ###############################################################################
-
 
     graph, _, _ = read_graph(data_file)
 
@@ -123,33 +105,36 @@ def main(data_file):
     if DEBUG:
         print(graph)
 
-    leaders = []
-    sccs = []
-    visited = set()
+    # visited is equivalent of the union of all sets in sccs, but union each
+    # time after a scc is returned is too slow, so keep both visited and sccs
+    visited, sccs, leaders = set(), [], []
     for k, (i, _) in enumerate(sorted_visited_items):
         if i in graph:
             if i not in visited:
                 leaders.append(i)
-                scc, visited = dfs_second_pass(graph, i, visited, fin_ts)
+                visited, scc = dfs_second_pass(graph, i, visited, fin_ts)
                 sccs.append(scc)
-        else:
+        else:    # else is important for vertexes that have only incoming edges
             leaders.append(i)
             visited.add(i)
             sccs.append(set([i]))
 
-        if k % 10000 == 0:
+        if k % 100000 == 0:
             print('Processing Vertex {0}. len(visited): {1}'.format(k, len(visited)))
 
     if DEBUG:
         print('visited: ', visited)
         print('leaders: ', leaders)
         print('SCCs: ', sccs)
-        # assert sccs == [{1, 4, 7}, {9, 3, 6}, {8, 2, 5}]
 
+    print('sorting SCCs by size...')
     res = sorted(map(lambda x: len(x), sccs), reverse=True)[:5]
+
     if len(res) < 5:
         res.extend([0] * (5 - len(res)))
-    return(','.join(map(str, res)))
+    sizes = (','.join(map(str, res)))
+    print('sizes of largest 5 SCCs: {0}'.format(sizes))
+    return sizes
 
 
 DEBUG = eval(sys.argv[1])
