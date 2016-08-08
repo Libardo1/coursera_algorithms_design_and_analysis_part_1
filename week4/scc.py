@@ -1,7 +1,6 @@
 import itertools
 
 import sys
-sys.setrecursionlimit(100000)    # default: 1000
 
 
 def read_graph(data_file, reverse=False):
@@ -54,14 +53,15 @@ def dfs_first_pass(graph, start, visited, fin_t):
     return visited, fin_ts, fin_t
 
 
-def dfs_second_pass(graph, start, visited, fin_ts):
-    cutoff = fin_ts[start]
+def dfs_second_pass(graph, start, visited):
     scc = set()
     stack = [start]
     while stack:
         vertex = stack.pop()
 
-        if fin_ts[vertex] <= cutoff and vertex not in scc:
+        # otherwise, if vertex is in visited, it could be in a SCC previously
+        # explored
+        if vertex not in visited:
             scc.add(vertex)
             visited.add(vertex)
             if vertex in graph:
@@ -93,6 +93,7 @@ def main(data_file):
     
     if DEBUG:
         print('visited: ', visited)
+        print('pairs of (vertex, finishing_time):')
         for item in sorted_visited_items:
             print(item)
 
@@ -112,7 +113,7 @@ def main(data_file):
         if i in graph:
             if i not in visited:
                 leaders.append(i)
-                visited, scc = dfs_second_pass(graph, i, visited, fin_ts)
+                visited, scc = dfs_second_pass(graph, i, visited)
                 sccs.append(scc)
         else:    # else is important for vertexes that have only incoming edges
             leaders.append(i)
@@ -135,7 +136,6 @@ def main(data_file):
     sizes = (','.join(map(str, res)))
     print('sizes of largest 5 SCCs: {0}'.format(sizes))
     return sizes
-
 
 DEBUG = eval(sys.argv[1])
 
