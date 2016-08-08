@@ -59,21 +59,24 @@ def dfs(graph, start, visited=None, fin_t=1):
     return visited, fin_ts, fin_t
 
 
-def dfs_second_pass(graph, leader, visited):
+def dfs_second_pass(graph, leader, visited, fin_ts):
     """
     :param visited: all previously visited nodes
     """
+
+    cutoff = fin_ts[leader]
     scc = set()
     stack = [leader]
     while stack:
         vertex = stack.pop()
 
-        if vertex not in visited:
+        if fin_ts[vertex] <= cutoff:
             if vertex not in scc:
                 scc.add(vertex)
+                visited.add(vertex)
                 if vertex in graph: # depth first
                     stack.extend(graph[vertex] - scc)
-    return scc
+    return scc, visited
 
 
 def main(data_file):
@@ -123,20 +126,19 @@ def main(data_file):
     leaders = []
     sccs = []
     visited = set()
-    for (i, _) in sorted_visited_items:
+    for k, (i, _) in enumerate(sorted_visited_items):
         if i in graph:
             if i not in visited:
                 leaders.append(i)
-                scc = dfs_second_pass(graph, i, visited)
+                scc, visited = dfs_second_pass(graph, i, visited, fin_ts)
                 sccs.append(scc)
-                visited = visited.union(scc)
         else:
             leaders.append(i)
             visited.add(i)
             sccs.append(set([i]))
 
-        if i % 100000 == 0:
-            print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
+        if k % 10000 == 0:
+            print('Processing Vertex {0}. len(visited): {1}'.format(k, len(visited)))
 
     if DEBUG:
         print('visited: ', visited)
