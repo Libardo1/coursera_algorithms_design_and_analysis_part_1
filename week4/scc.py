@@ -1,3 +1,5 @@
+import itertools
+
 import sys
 sys.setrecursionlimit(100000)    # default: 1000
 
@@ -57,33 +59,22 @@ def dfs(graph, start, visited=None, fin_t=1):
     return visited, fin_ts, fin_t
 
 
-def dfs_second_pass(graph, leader, sccs, visited=None):
+def dfs_second_pass(graph, leader, visited):
     """
-    :param fin_t: the time when a vertex is fully explored
+    :param visited: all previously visited nodes
     """
-    if visited is None:
-        visited = set()
-
     scc = set()
     stack = [leader]
     while stack:
         vertex = stack.pop()
-        scc.add(vertex)
+
         if vertex not in visited:
-            visited.add(vertex)
-            if vertex in graph: # depth first
-                unvisited_children = graph[vertex] - visited
-            else:
-                univisited_children = set()
+            if vertex not in scc:
+                scc.add(vertex)
+                if vertex in graph: # depth first
+                    stack.extend(graph[vertex] - scc)
+    return scc
 
-            if len(unvisited_children) == 0 and len(stack) == 0:
-                # meaning it has been fully explored
-                sccs.append(scc)
-                scc = set()
-            else:
-                stack.extend(unvisited_children)
-
-    return visited
 
 def main(data_file):
     graph, n_vertexes, n_edges = read_graph(data_file, reverse=True)
@@ -136,13 +127,17 @@ def main(data_file):
         if i in graph:
             if i not in visited:
                 leaders.append(i)
-                scc = set()
-                visited = dfs_second_pass(graph, i, sccs, visited)
+                scc = dfs_second_pass(graph, i, visited)
+                sccs.append(scc)
+                visited = visited.union(scc)
         else:
             leaders.append(i)
             visited.add(i)
             sccs.append(set([i]))
-    
+
+        if i % 100000 == 0:
+            print('Processing Vertex {0}. len(visited): {1}'.format(i, len(visited)))
+
     if DEBUG:
         print('visited: ', visited)
         print('leaders: ', leaders)
