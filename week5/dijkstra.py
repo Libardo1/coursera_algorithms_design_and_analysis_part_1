@@ -32,40 +32,15 @@ def read_graph(data_file, reverse=False):
     return graph, len(vertexes), n_edges
 
 
-# def dijkstra(graph, start):
-#     # stores explored vertexes
-#     X = set()
-#     # stores shortest distance from start to any vertex
-#     dists = {start: 0}
-#     # stores the corresponding shortest path from start to any vertex
-#     paths = {start: [start]}
-
-#     queue = [(start, v_to, dist) for (v_to, dist) in graph[start].items()]
-#     current_vertex = None
-#     while queue:
-#         v_from, v_to, dist = queue.pop(0)
-#         if current_vertex is None:
-#             current_vertex = v_from
-#         else:
-#             if v_from != current_vertex:
-#                 X.add(current_vertex) # fully explored
-#                 current_vertex = v_from
-
-#         new_dist =  dists[v_from] + dist
-#         if v_to in dists:
-#             if new_dist < dists[v_to]:
-#                 dists[v_to] = new_dist
-#                 paths[v_to] = paths[v_from] + [v_to]
-#         else:
-#             dists[v_to] = new_dist
-#             paths[v_to] = paths[v_from] + [v_to]
-
-#         queue.extend([(v_to, v_to_next, dist)
-#                       for (v_to_next, dist) in graph[v_to].items()
-#                       if v_to_next not in X])
-
-#     return dists, paths
-
+def get_crossing_edges(graph, X):
+    """
+    This function should be improved, once a vertex is added to X, all edges
+    from other vertexes in X to it doesn't need to be concerned anymore
+    """
+    for v_from in X:
+        for (v_to, dist) in graph[v_from].items():
+            if v_to not in X:
+                yield v_from, v_to, dist
 
 
 def dijkstra(graph, start):
@@ -76,28 +51,22 @@ def dijkstra(graph, start):
     # stores the corresponding shortest path from start to any vertex
     paths = {start: [start]}
 
-    queue = [(start, v_to, dist) for (v_to, dist) in graph[start].items()]
     X.add(start)
 
-    while queue:
-        v_from, v_to, dist = queue.pop(0)
-
-        new_dist =  dists[v_from] + dist
-        if v_to in dists:
-            if new_dist < dists[v_to]:
-                dists[v_to] = new_dist
-                paths[v_to] = paths[v_from] + [v_to]
-        else:
-            dists[v_to] = new_dist
-            paths[v_to] = paths[v_from] + [v_to]
-
-        if v_to not in X:
-            queue.extend([(v_to, v_to_next, dist)
-                          for (v_to_next, dist)
-                          in graph[v_to].items()])
-        X.add(v_to)
-
+    all_vertexes = len(graph)
+    while len(X) < all_vertexes:
+        min_v_from, min_v_to, min_greedy_score = None, None, 10000000
+        for (v_from, v_to, dist) in get_crossing_edges(graph, X):
+            greedy_score = dists[v_from] + dist
+            if greedy_score < min_greedy_score:
+                min_greedy_score = greedy_score
+                min_v_to = v_to
+                min_from_to = v_from
+        dists[min_v_to] = min_greedy_score
+        paths[min_v_to] = paths[min_from_to] + [min_v_to]
+        X.add(min_v_to)
     return dists, paths
+
 
 
 def assertEqual(a, b):
@@ -171,7 +140,7 @@ def test5():
     #             print('{0} -> {1}'.format(i, j))
 
     dists, paths = dijkstra(graph, 1)
-    assertEqual(dists, {1: 0, 2: 1, 3: 4, 4: 3, 5: 11, 6: 7, 7: 2, 8: 8, 9: 12, 10: 9})
+    assertEqual(dists, {1: 0, 2: 1, 3: 4, 4: 3, 5: 11, 6: 7, 7: 2, 8: 8, 9: 10, 10: 9})
 
 def test6():
     data_file = 'testData6.txt'
@@ -185,13 +154,13 @@ def test6():
 DEBUG = eval(sys.argv[1])
 
 if DEBUG:
-    # test0()
-    # test1()
+    test0()
+    test1()
     # test2()                     # test2 doesn't have ground truth in the forum
-    # test3()
-    # test4()
+    test3()
+    test4()
     test5()
-    # test6()
+    test6()
 
 else:
     data_file = 'dijkstraData.txt'
